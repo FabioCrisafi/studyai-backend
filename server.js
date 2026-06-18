@@ -8,6 +8,8 @@ const OPENROUTER_KEY = process.env.OPENROUTER_KEY;
 app.use(cors({
   origin: [
     'https://liamnoelstrub.github.io',
+    'https://studyai-frontend-mauve.vercel.app',
+    'https://fabiocrisafi.github.io',
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://localhost:3000'
