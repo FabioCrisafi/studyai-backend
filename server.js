@@ -3,13 +3,11 @@ const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const OPENROUTER_KEY = process.env.OPENROUTER_KEY;
+const API_KEY = process.env.OPENROUTER_KEY || process.env.OPENAI_KEY;
 
 app.use(cors({
   origin: [
-    'https://liamnoelstrub.github.io',
     'https://studyai-frontend-mauve.vercel.app',
-    'https://fabiocrisafi.github.io',
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://localhost:3000'
@@ -22,7 +20,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/api/analyze', async (req, res) => {
-  if (!OPENROUTER_KEY) {
+  if (!API_KEY) {
     return res.status(500).json({ error: 'API Key nicht konfiguriert' });
   }
 
@@ -31,17 +29,27 @@ app.post('/api/analyze', async (req, res) => {
     return res.status(400).json({ error: 'Kein Prompt übergeben' });
   }
 
+  const isOpenAI = API_KEY.startsWith('sk-') && !API_KEY.startsWith('sk-or-');
+  const endpoint = isOpenAI
+    ? 'https://api.openai.com/v1/chat/completions'
+    : 'https://openrouter.ai/api/v1/chat/completions';
+  const model = isOpenAI ? 'gpt-4o-mini' : 'meta-llama/llama-3.3-70b-instruct:free';
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${API_KEY}`,
+  };
+  if (!isOpenAI) {
+    headers['HTTP-Referer'] = 'https://studyai-frontend-mauve.vercel.app';
+    headers['X-Title'] = 'StudyAI';
+  }
+
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_KEY}`,
-        'HTTP-Referer': 'https://liamnoelstrub.github.io/studyai',
-        'X-Title': 'StudyAI',
-      },
+      headers,
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
+        model,
         max_tokens: 4096,
         messages: [{ role: 'user', content: prompt }],
       }),
